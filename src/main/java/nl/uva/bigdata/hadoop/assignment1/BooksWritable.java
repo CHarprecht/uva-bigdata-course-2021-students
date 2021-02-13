@@ -24,7 +24,7 @@ public class BooksWritable  implements Writable {
             out.writeUTF(this.books[i].getTitle());
             out.writeInt(this.books[i].getYear());
         }
-        System.out.println("Wrote all "+this.books.length+ " books");
+        //System.out.println("Wrote all "+this.books.length+ " books");
     }
     @Override
     public void readFields(DataInput in) throws IOException {
@@ -37,7 +37,7 @@ public class BooksWritable  implements Writable {
             books[j] = new Book(title, year);
         }
         setBooks(books);
-        System.out.println("Read all "+length+" books");
+        //System.out.println("Read all "+length+" books");
     }
 
     @Override

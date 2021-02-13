@@ -40,13 +40,12 @@ public class FilteringWordCount extends HadoopJob {
             StringTokenizer tokenizer = new StringTokenizer(value.toString().replaceAll("[^a-zA-Z ]", ""));
             while (tokenizer.hasMoreTokens()) {
                 word.set(tokenizer.nextToken().toLowerCase());
+                //System.out.println("Filtered: "+word);
                 if (!(word.toString().equals("to")) && !(word.toString().equals("the"))) {
                     context.write(word, ONE);
-                    System.out.println("Mapped: "+word +" with count: "+ONE);
+                    //System.out.println("Mapped: "+word +" with count: "+ONE);
                 }
-                else {
-                    System.out.println("Filtered: "+word);
-                }
+                else continue;
 
             }
         }
