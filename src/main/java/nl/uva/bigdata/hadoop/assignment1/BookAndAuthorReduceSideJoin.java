@@ -37,7 +37,6 @@ public class BookAndAuthorReduceSideJoin extends HadoopJob {
     } else {
       job = new Job();
     }
-    System.out.println("Start Job Configuration");
     Configuration conf = job.getConfiguration();
 
     job.setJarByClass(BookAndAuthorReduceSideJoin.class);
@@ -64,7 +63,7 @@ public class BookAndAuthorReduceSideJoin extends HadoopJob {
     public BookAuthorWritable() {}
 
     public String getBook() {
-      return book;
+      return this.book;
     }
 
     public void setBook(String book) {
@@ -72,7 +71,7 @@ public class BookAndAuthorReduceSideJoin extends HadoopJob {
     }
 
     public String getAuthor() {
-      return author;
+      return this.author;
     }
 
     public void setAuthor(String author) {
@@ -80,7 +79,7 @@ public class BookAndAuthorReduceSideJoin extends HadoopJob {
     }
 
     public int getYear() {
-      return year;
+      return this.year;
     }
 
     public void setYear(int year) {
@@ -134,19 +133,19 @@ public class BookAndAuthorReduceSideJoin extends HadoopJob {
     IntWritable id = new IntWritable();
 
     public void map(Object key, Text value, Mapper.Context context) throws IOException, InterruptedException {
-      System.out.println("-----Start Author Mapping with: "+value);
+      //System.out.println("-----Start Author Mapping with: "+value);
 
       StringTokenizer tokenizer = new StringTokenizer(value.toString());
 
       id.set(Integer.parseInt(tokenizer.nextToken()));
 
-      String author = tokenizer.nextToken();
+      StringBuilder author = new StringBuilder(tokenizer.nextToken());
       while(tokenizer.hasMoreTokens()){
-        author = author + " "+ tokenizer.nextToken();
+        author.append(" ").append(tokenizer.nextToken());
       }
 
-      output.setAuthor(author);
-      System.out.println("ID: "+id+" Author: "+output.getAuthor());
+      output.setAuthor(author.toString());
+      //System.out.println("ID: "+id+" Author: "+output.getAuthor());
       context.write(id, output);
     }
   }
@@ -161,55 +160,47 @@ public class BookAndAuthorReduceSideJoin extends HadoopJob {
       id.set(Integer.parseInt(tokenizer.nextToken()));
       int year = Integer.parseInt(tokenizer.nextToken());
 
-      String book = tokenizer.nextToken();
+      StringBuilder book = new StringBuilder(tokenizer.nextToken());
       while(tokenizer.hasMoreTokens()){
-        book = book + " "+ tokenizer.nextToken();
+        book.append(" ").append(tokenizer.nextToken());
       }
 
-      output.setBook(book);
+      output.setBook(book.toString());
       output.setYear(year);
 
-      System.out.println("ID: "+id+" Book: "+book+" Year: "+year);
+      //System.out.println("ID: "+id+" Book: "+book+" Year: "+year);
       context.write(id,output);
     }
   }
 
   public static class BookAuthorReducer extends Reducer<IntWritable,BookAuthorWritable,Text,NullWritable> {
-    BookAuthorWritable output = new BookAuthorWritable();
-    ArrayList<BookAuthorWritable> books;
 
     public void reduce(IntWritable id,Iterable<BookAuthorWritable> inputs,  Context context)
             throws IOException, InterruptedException {
-      System.out.println("-----Received Input: "+inputs + " with id: "+id);
+      //System.out.println("-----Received Input: "+inputs + " with id: "+id);
 
-      for (BookAuthorWritable input : inputs) {
-        String author = input.getAuthor();
-        System.out.println("-----Received Author: "+author + " with id: "+id);
-        if (!author.equals("NA")) {
-          output.setAuthor(author);
-        }
-        else {
-          books.add(input);
-        }
-      }
-      for (int i = 0; i < books.size(); i ++) {
-        BookAuthorWritable input = books.get(i);
-        String book = input.getBook();
-        int year = input.getYear();
-        System.out.println("-----Received Book: "+book + " with id: "+id+" and year: "+year);
-        if (!book.equals("NA")) {
-          output.setBook(book);
-          output.setYear(year);
-        }
-        if (!output.getBook().equals("NA") && !output.getAuthor().equals("NA")) {
-          Text textOut = new Text(output.getAuthor()+"\t"+output.getBook()+"\t"+output.getYear());
-          System.out.println("Final Output: "+textOut);
-          context.write(textOut,NullWritable.get());
+      Iterator<BookAuthorWritable> it = inputs.iterator();
+      List<String> cacheBook = new ArrayList<String>();
+      List<Integer> cacheYear = new ArrayList<Integer>();
+      Text author = new Text();
+
+      while (it.hasNext()) {
+        BookAuthorWritable value = it.next();
+        //System.out.println("-----"+id+" Received Author: "+value.getAuthor() + " with book: "+value.getBook());
+        if (!value.getAuthor().equals("NA")) {
+          author.set(value.getAuthor());
+        } else {
+          cacheBook.add(value.getBook());
+          cacheYear.add(value.getYear());
         }
       }
 
+      for(int i = 0;i < cacheBook.size();i ++) {
+        //System.out.println("-----Received Book: "+cacheBook.get(i) + " with id: "+id+" and year: "+cacheYear.get(i));
+        Text textOut = new Text(author+"\t"+cacheBook.get(i)+"\t"+cacheYear.get(i));
+        //System.out.println("Final Output: "+textOut);
+        context.write(textOut,NullWritable.get());
       }
-
+      }
     }
-
 }
